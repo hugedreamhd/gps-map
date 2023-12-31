@@ -41,11 +41,7 @@ class GpsMapAppState extends State<GpsMapApp> {
     zoom: 14.4746,
   );
 
-  static const CameraPosition _kLake = CameraPosition(
-      bearing: 192.8334901395799,
-      target: LatLng(37.43296265331129, -122.08832357078792),
-      tilt: 59.440717697143555,
-      zoom: 19.151926040649414);
+  CameraPosition? _initialCameraPosition;
 
   @override
   void initState() {
@@ -58,15 +54,24 @@ class GpsMapAppState extends State<GpsMapApp> {
   Future<void> init() async {
     final position = await _determinePosition(); //포지션이 포지션 객체로 얻어진다
 
-    print(position.toString());
+    _initialCameraPosition = CameraPosition(
+      target: LatLng(position.latitude, position.longitude),
+    ); //에뮬 실행시 초기 gps 위치 변경코도
+
+    setState(() {});// 위 값을 가지고 새로  UI를 호출한다
+
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GoogleMap(
+      body: _initialCameraPosition == null
+      ? const Center(child: CircularProgressIndicator())
+      : GoogleMap(
         mapType: MapType.normal,
-        initialCameraPosition: _kGooglePlex,
+        initialCameraPosition: _initialCameraPosition!,//처음에는 null이다. null일때는
+        //그릴 수가 없으니까 null 인 동안에는 로딩을 하겠다 - 삼항연산일때는 null 체크를 하더라도
+        //null 이라고 인식을 할 수 없다. 임의로 느낌표로 알려줘야한다(!)
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
         },
@@ -86,6 +91,11 @@ class GpsMapAppState extends State<GpsMapApp> {
       target: LatLng(position.latitude, position.longitude),
       zoom: 18,
     );
+
+    // setState(() {
+    //   _initialCameraPosition = cameraPosition;// chatgpt가 알려준 초기 카메라 위치 업데이트
+    // });
+
     await controller
         .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
   }

@@ -34,14 +34,13 @@ class GpsMapApp extends StatefulWidget {
 
 class GpsMapAppState extends State<GpsMapApp> {
   final Completer<GoogleMapController> _controller =
-  Completer<GoogleMapController>();
-
-  static const CameraPosition _kGooglePlex = CameraPosition(
-    target: LatLng(37.42796133580664, -122.085749655962),
-    zoom: 14.4746,
-  );
+      Completer<GoogleMapController>();
 
   CameraPosition? _initialCameraPosition;
+
+  int _polylineIdCounter = 0; //0부터 하나씩 증가하도록
+  Set<Polyline> _polylines = {}; //중복을 허용하지 않는 set 세팅
+  LatLng? _prevPosition;
 
   @override
   void initState() {
@@ -62,7 +61,24 @@ class GpsMapAppState extends State<GpsMapApp> {
     const locationSettings = LocationSettings();
     Geolocator.getPositionStream(locationSettings: locationSettings)
         .listen((Position position) {
-          _moveCamera(position);
+      _polylineIdCounter++;
+      final polylineId = PolylineId('$_polylineIdCounter');
+      final polyline = Polyline(
+        polylineId: polylineId,
+        color: Colors.red,
+        width: 3,
+        points: [
+          _prevPosition ?? _initialCameraPosition!.target,
+          LatLng(position.latitude, position.longitude),
+        ], //위도 경도를 잇기 위해 점 값을 알아야된다
+      );
+
+      setState(() {
+        _polylines.add(polyline);
+        _prevPosition = LatLng(position.latitude, position.longitude);
+      });
+
+      _moveCamera(position);
     });
   }
 
@@ -72,15 +88,17 @@ class GpsMapAppState extends State<GpsMapApp> {
       body: _initialCameraPosition == null
           ? const Center(child: CircularProgressIndicator())
           : GoogleMap(
-        mapType: MapType.normal,
-        initialCameraPosition: _initialCameraPosition!, //처음에는 null이다. null일때는
-        //그릴 수가 없으니까 null 인 동안에는 로딩을 하겠다 - 삼항연산일때는 null 체크를 하더라도
-        //null 이라고 인식을 할 수 없다. 임의로 느낌표로 알려줘야한다(!)
-        onMapCreated: (GoogleMapController controller) {
-          _controller.complete(controller);
-        },
-      ),
-
+              mapType: MapType.normal,
+              initialCameraPosition:
+                  _initialCameraPosition!, //처음에는 null이다. null일때는
+              //그릴 수가 없으니까 null 인 동안에는 로딩을 하겠다 - 삼항연산일때는 null 체크를 하더라도
+              //null 이라고 인식을 할 수 없다. 임의로 느낌표로 알려줘야한다(!)
+              onMapCreated: (GoogleMapController controller) {
+                _controller.complete(controller);
+              },
+              polylines:
+                  _polylines, //googlemap은 화면에 그림을 선으로 그릴수 있는 기능을 제공(id, polyline 2개필요)
+            ),
     );
   }
 

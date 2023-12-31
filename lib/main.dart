@@ -34,7 +34,7 @@ class GpsMapApp extends StatefulWidget {
 
 class GpsMapAppState extends State<GpsMapApp> {
   final Completer<GoogleMapController> _controller =
-      Completer<GoogleMapController>();
+  Completer<GoogleMapController>();
 
   static const CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(37.42796133580664, -122.085749655962),
@@ -58,38 +58,38 @@ class GpsMapAppState extends State<GpsMapApp> {
       target: LatLng(position.latitude, position.longitude),
     ); //에뮬 실행시 초기 gps 위치 변경코도
 
-    setState(() {});// 위 값을 가지고 새로  UI를 호출한다
-
+    setState(() {}); // 위 값을 가지고 새로  UI를 호출한다 근데 왜 안오지?
+    const locationSettings = LocationSettings();
+    Geolocator.getPositionStream(locationSettings: locationSettings)
+        .listen((Position position) {
+          _moveCamera(position);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _initialCameraPosition == null
-      ? const Center(child: CircularProgressIndicator())
-      : GoogleMap(
+          ? const Center(child: CircularProgressIndicator())
+          : GoogleMap(
         mapType: MapType.normal,
-        initialCameraPosition: _initialCameraPosition!,//처음에는 null이다. null일때는
+        initialCameraPosition: _initialCameraPosition!, //처음에는 null이다. null일때는
         //그릴 수가 없으니까 null 인 동안에는 로딩을 하겠다 - 삼항연산일때는 null 체크를 하더라도
         //null 이라고 인식을 할 수 없다. 임의로 느낌표로 알려줘야한다(!)
         onMapCreated: (GoogleMapController controller) {
           _controller.complete(controller);
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _goToTheLake,
-        label: const Text('To the lake!'),
-        icon: const Icon(Icons.directions_boat),
-      ),
+
     );
   }
 
-  Future<void> _goToTheLake() async {
+  Future<void> _moveCamera(Position position) async {
     final GoogleMapController controller = await _controller.future;
-    final position = await Geolocator.getCurrentPosition();
+
     final cameraPosition = CameraPosition(
       target: LatLng(position.latitude, position.longitude),
-      zoom: 18,
+      zoom: 17,
     );
 
     // setState(() {
